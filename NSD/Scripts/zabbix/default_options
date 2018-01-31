@@ -1,0 +1,3 @@
+LOGFILE="/home/ubuntu/install.log"
+SERVICE="zabbix"
+CONFIG_FOLDER="/etc/zabbix/"

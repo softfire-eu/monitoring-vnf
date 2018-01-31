@@ -1,0 +1,152 @@
+tosca_definitions_version: tosca_simple_profile_for_nfv_1_0
+description: iperf_experiment
+metadata:
+  ID: zabbix-nsd-test
+  vendor: FOKUS
+  version: 1.0
+topology_template:
+  node_templates:
+    iperf-server: #VNF1
+        type: openbaton.type.VNF
+        properties:
+          ID: server-vnf
+          vendor: FOKUS
+          version: 1.0
+          endpoint: generic
+          type: server
+          deploymentFlavour:
+            - flavour_key: m1.small
+        requirements:
+           - virtualLink: Server-Network
+           - vdu: VDU2
+        interfaces:
+          lifecycle: # lifecycle
+            INSTANTIATE:
+              - install.sh
+            CONFIGURE:
+              - zabbix_configure_agent.sh
+    iperf-client:
+      type: openbaton.type.VNF
+      properties:
+        ID: client-vnf
+        vendor: FOKUS
+        version: 1.0
+        type: client
+        deploymentFlavour:
+          - flavour_key: m1.small
+
+        endpoint: generic
+      requirements:
+         - virtualLink: Server-Network
+         - vdu: VDU1
+      interfaces:
+          lifecycle: # lifecycle
+            INSTANTIATE:
+              - install.sh
+            CONFIGURE:
+              - zabbix_configure_agent.sh
+    zabbixserver: #VNF1
+        type: openbaton.type.VNF
+        properties:
+          ID: zabbix-server
+          vendor: FOKUS
+          version: 1.0
+          endpoint: generic
+          type: zabbix
+          configurations:
+            configurationParameters:
+              - name: zabbix
+            name: zabbixserver-configuration
+          deploymentFlavour:
+            - flavour_key: m1.small
+        requirements:
+          - virtualLink: softfire-internal
+          - vdu: VDU3
+        interfaces:
+          lifecycle: # lifecycle
+            INSTANTIATE:
+              - install.sh
+    VDU1:
+      type: tosca.nodes.nfv.VDU
+      properties:
+        scale_in_out: 2
+      requirements:
+        - virtual_link: CP1
+      artifacts:
+        VDU1Image:
+          type: tosca.artifacts.Deployment.Image.VM
+          file: Ubuntu-16.04
+    VDU2:
+      type: tosca.nodes.nfv.VDU
+      properties:
+        scale_in_out: 2
+      requirements:
+        - virtual_link: CP2
+      artifacts:
+        VDU2Image:
+          type: tosca.artifacts.Deployment.Image.VM
+          file: Ubuntu-16.04
+    VDU3:
+      type: tosca.nodes.nfv.VDU
+      properties:
+        scale_in_out: 2
+      requirements:
+        - virtual_link: CP3
+      artifacts:
+        VDU3Image:
+          type: tosca.artifacts.Deployment.Image.VM
+          file: Ubuntu-14.04
+    CP1: #endpoints of VNF
+      type: tosca.nodes.nfv.CP
+      properties:
+        floatingIP: random
+      requirements:
+        - virtualBinding: VDU1
+        - virtualLink: Server-Network
+    CP2: #endpoints of VNF
+      type: tosca.nodes.nfv.CP
+      properties:
+        floatingIP: random
+      requirements:
+        - virtualBinding: VDU2
+        - virtualLink: Server-Network
+    CP3: #endpoints of VNF
+      type: tosca.nodes.nfv.CP
+      properties:
+        floatingIP: random
+      requirements:
+        - virtualBinding: VDU3
+        - virtualLink: softfire-internal
+    Server-Network:
+      type: tosca.nodes.nfv.VL
+      properties:
+        vendor: FOKUS
+    Client-Network:
+      type: tosca.nodes.nfv.VL
+      properties:
+        vendor: FOKUS
+    softfire-internal:
+      type: tosca.nodes.nfv.VL
+      properties:
+        vendor: FOKUS
+relationships_template:
+  rel1: 
+    type: tosca.nodes.relationships.ConnectsTo
+    source: zabbixserver
+    target: iperf-client
+    parameters:
+        - softfire-internal_floatingIp
+        - name
+  rel2: 
+    type: tosca.nodes.relationships.ConnectsTo
+    source: iperf-server
+    target: iperf-client
+    parameters:
+        - Server-Network
+  rel3: 
+    type: tosca.nodes.relationships.ConnectsTo
+    source: zabbixserver
+    target: iperf-server
+    parameters:
+        - softfire-internal_floatingIp
+        - name

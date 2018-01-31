@@ -1,0 +1,9 @@
+name: Iperf Example
+description: Iperf Example.
+provider: FOKUS
+nfvo_version: 5.0.1
+image:
+    upload: false
+
+vim_types:
+    - openstack
